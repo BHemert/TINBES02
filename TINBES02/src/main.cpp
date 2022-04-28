@@ -38,6 +38,7 @@ void loop()
     {
       if (buf[i] == ' ' || buf[i] == '\n')
       {
+        // return true en ga door naar functie
         buf[i] = '\0';
       }
     }
