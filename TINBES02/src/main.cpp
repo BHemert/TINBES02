@@ -1,7 +1,29 @@
 #include <Arduino.h>
+#include <EEPROM.h>
 
 const int BUFFER_SIZE = 12;
 char buf[BUFFER_SIZE];
+
+EERef noOfFiles = EEPROM[160];
+
+typedef struct
+{ // struct for the FAT table
+  char name[BUFFER_SIZE];
+  int startingPoint;
+  int lengthOfFile;
+} FATtype;
+
+FATtype FAT[10] = {
+    {"", 0, 0},
+    {"", 0, 0},
+    {"", 0, 0},
+    {"", 0, 0},
+    {"", 0, 0},
+    {"", 0, 0},
+    {"", 0, 0},
+    {"", 0, 0},
+    {"", 0, 0},
+    {"", 0, 0}};
 
 bool input_routine()
 {
@@ -24,10 +46,13 @@ bool input_routine()
     }
     // Complete buffer
   }
+  return false;
 }
+
 void store()
 {
-  Serial.println("Hij is in store");
+  input_routine();
+  
 }
 void retrieve()
 {
@@ -68,12 +93,43 @@ void proccesInput()
   }
 }
 
+void writeFATEntry(int address, RfObject value)
+{
+  EEPROM.put(address, value);
+}
+
+void readFATEntry(int address, RfObject value)
+{
+  EEPROM.get(address, value);
+  Serial.print("Value at address ");
+  Serial.print(address);
+  Serial.print(" is ");
+  Serial.print(value.beginPositie);
+  Serial.print(value.bestandNaam);
+  Serial.print(value.lengte);
+}
+
+void searchFAT(String naam)
+{
+  for (int i = 0; i < EEPROM.length(); i++)
+  {
+    if (EEPROM.read(i) != 0)
+
+      Serial.print("Found entry at address ");
+    Serial.print(i);
+    Serial.print(" with value ");
+    Serial.println(EEPROM.read(i));
+  }
+}
+
 void setup()
 {
-  input_routine() == false;
   Serial.begin(9600);
-  // command[0].func();
-  Serial.println(F("Arduino OS 1.0 Ready"));
+  FATtype test = {"test", 0, 0};
+  writeFATEntry(1, object1);
+  writeFATEntry(100, object2);
+  readFATEntry(1, object1);
+  readFATEntry(1, object2);
 }
 
 void loop()
