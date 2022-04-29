@@ -17,11 +17,12 @@ bool input_routine()
       {
         // return true en ga door naar functie
         buf[i] = '\0';
+        Serial.print(buf);
+        Serial.print(F("\n"));
         return true;
       }
     }
     // Complete buffer
-    Serial.println(buf);
   }
 }
 void store()
@@ -32,7 +33,6 @@ void retrieve()
 {
   Serial.println("Hij is in retrieve");
 }
-
 typedef struct
 {
   char name[BUFFER_SIZE];
@@ -44,6 +44,29 @@ static commandType command[] =
         {"store", &store},
         {"retrieve", &retrieve},
         {"", NULL}};
+
+void proccesInput()
+{
+  for (int i = 0; i < sizeof(command) / sizeof(commandType); i++)
+  {
+    if (strcmp(command[i].name, buf) == 0)
+    {
+      Serial.println(F("Executing command"));
+      command[i].func();
+      return;
+    }
+    else
+    {
+      Serial.println("Given command not found choose one of following: ");
+      for (int i = 0; i < sizeof(command) / sizeof(commandType); i++)
+      {
+        Serial.print(command[i].name);
+        Serial.print(" ");
+      }
+      return; // return to main loop
+    }
+  }
+}
 
 void setup()
 {
@@ -57,19 +80,11 @@ void loop()
 {
   if (input_routine() == true)
   {
-    for (int i = 0; i < sizeof(command) / sizeof(commandType); i++)
-    {
-      if (strcmp(command[i].name, buf) == 0)
-      {
-        Serial.println(F("Executing command"));
-        Serial.print(strcmp(command[i].name, buf));
-        command[i].func();
-      }
-    }
+    proccesInput();
   }
   else
 
   {
-    Serial.println(F("Command not found"));
+    // Serial.println(F("NON BLOCKING"));
   }
 }
