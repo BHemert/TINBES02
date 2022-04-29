@@ -28,6 +28,10 @@ void store()
 {
   Serial.println("Hij is in store");
 }
+void retrieve()
+{
+  Serial.println("Hij is in retrieve");
+}
 
 typedef struct
 {
@@ -38,7 +42,8 @@ typedef struct
 static commandType command[] =
     {
         {"store", &store},
-};
+        {"retrieve", &retrieve},
+        {"", NULL}};
 
 void setup()
 {
