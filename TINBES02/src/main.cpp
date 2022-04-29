@@ -25,6 +25,25 @@ FATtype FAT[10] = {
     {"", 0, 0},
     {"", 0, 0}};
 
+bool fileNameExists()
+{
+  for (int i = 0; i < noOfFiles; i++)
+  {
+    if (strcmp(FAT[i].name, buf) == 0)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+void runProccesses()
+{
+  int x = 0;
+}
+void resetSerial()
+{
+  memset(buf, 0, sizeof(buf));
+}
 bool input_routine()
 {
   // read if any data is available
@@ -48,11 +67,68 @@ bool input_routine()
   }
   return false;
 }
+int searchFreeFATPlace()
+{
+  for (byte i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
+  {
+    if (strcmp(FAT[i].name, "") == 0)
+    {
+      Serial.println(F("Found free FAT entry"));
+      return i;
+    }
+  }
+  return -1;
+}
 
+byte sortFAT(){ // Sort the FAT table
+  byte i, j;
+  for (i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
+  {
+    for (j = 0; j < sizeof(FAT) / sizeof(FATtype); j++)
+    {
+      if (strcmp(FAT[i].name, FAT[j].name) < 0)
+      {
+        FATtype temp = FAT[i];
+        FAT[i] = FAT[j];
+        FAT[j] = temp;
+      }
+    }
+  }
+  return 0;
+
+}
 void store()
 {
-  input_routine();
-  
+  Serial.println("in store");
+  resetSerial();
+  while (input_routine() == false)
+  {
+    runProccesses();
+  }
+  char inputName[BUFFER_SIZE];
+  strcpy(inputName, buf);
+  resetSerial();
+  while (input_routine() == false)
+  {
+    runProccesses();
+  }
+  int inputLength = atoi(buf);
+  resetSerial();
+  while (input_routine() == false)
+  {
+    runProccesses();
+  }
+
+  if (searchFreeFATPlace() == -1)
+  {
+    Serial.println("No free space in FAT");
+    return;
+  }
+  if (fileNameExists())
+  {
+    Serial.println("File name already exists");
+    return;
+  }
 }
 void retrieve()
 {
@@ -72,7 +148,7 @@ static commandType command[] =
 
 void proccesInput()
 {
-  for (int i = 0; i < sizeof(command) / sizeof(commandType); i++)
+  for (byte i = 0; i < sizeof(command) / sizeof(commandType); i++)
   {
     if (strcmp(command[i].name, buf) == 0)
     {
@@ -82,8 +158,8 @@ void proccesInput()
     }
     else
     {
-      Serial.println("Given command not found choose one of following: ");
-      for (int i = 0; i < sizeof(command) / sizeof(commandType); i++)
+      Serial.println(F("Given command not found choose one of following: "));
+      for (byte i = 0; i < sizeof(command) / sizeof(commandType); i++)
       {
         Serial.print(command[i].name);
         Serial.print(" ");
@@ -93,43 +169,27 @@ void proccesInput()
   }
 }
 
-void writeFATEntry(int address, RfObject value)
+void writeFATEntry()
 {
-  EEPROM.put(address, value);
-}
-
-void readFATEntry(int address, RfObject value)
-{
-  EEPROM.get(address, value);
-  Serial.print("Value at address ");
-  Serial.print(address);
-  Serial.print(" is ");
-  Serial.print(value.beginPositie);
-  Serial.print(value.bestandNaam);
-  Serial.print(value.lengte);
-}
-
-void searchFAT(String naam)
-{
-  for (int i = 0; i < EEPROM.length(); i++)
+  for (byte i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
   {
-    if (EEPROM.read(i) != 0)
+    EEPROM.put(i * sizeof(FATtype), FAT[i]);
+  }
+}
 
-      Serial.print("Found entry at address ");
-    Serial.print(i);
-    Serial.print(" with value ");
-    Serial.println(EEPROM.read(i));
+void readFATEntry()
+{
+  for (byte i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
+  {
+    EEPROM.get(i * sizeof(FATtype), FAT[i]);
   }
 }
 
 void setup()
 {
   Serial.begin(9600);
+  Serial.println("Arduino OS 1.0 Ready");
   FATtype test = {"test", 0, 0};
-  writeFATEntry(1, object1);
-  writeFATEntry(100, object2);
-  readFATEntry(1, object1);
-  readFATEntry(1, object2);
 }
 
 void loop()
