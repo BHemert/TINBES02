@@ -4,6 +4,9 @@
 const int BUFFER_SIZE = 12;
 char buf[BUFFER_SIZE];
 
+char c;
+int j = 0;
+
 EERef noOfFiles = EEPROM[160];
 
 typedef struct
@@ -14,17 +17,63 @@ typedef struct
 } FATtype;
 
 FATtype FAT[10] = {
+    {"TEST2", 15, 0},
+    {"", 0, 0},
+    {"", 0, 0},
+    {"TEST", 0, 0},
     {"", 0, 0},
     {"", 0, 0},
     {"", 0, 0},
-    {"", 0, 0},
-    {"", 0, 0},
-    {"", 0, 0},
-    {"", 0, 0},
-    {"", 0, 0},
+    {"TEST3", 50, 0},
     {"", 0, 0},
     {"", 0, 0}};
 
+void writeFATEntry()
+{
+  for (byte i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
+  {
+    EEPROM.put(i * sizeof(FATtype), FAT[i]);
+  }
+}
+void sortFATTable()
+{
+  bool sorted = false;
+  long tmp;
+  char s[BUFFER_SIZE];
+  while (!sorted)
+  {
+    sorted = true;
+    for (int i = 0; i < 10 - 1; i++) // 10 uiteindelijk numberOfFiles NOITEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+    {
+      if (FAT[i].startingPoint > FAT[i + 1].startingPoint)
+      {
+
+        tmp = FAT[i].startingPoint;
+        FAT[i].startingPoint = FAT[i + 1].startingPoint;
+        FAT[i + 1].startingPoint = tmp;
+        tmp = FAT[i].lengthOfFile;
+        FAT[i].lengthOfFile = FAT[i + 1].lengthOfFile;
+        FAT[i + 1].lengthOfFile = tmp;
+        strcpy(s, FAT[i].name);
+        strcpy(FAT[i].name, FAT[i + 1].name);
+        strcpy(FAT[i + 1].name, s);
+        sorted = false;
+      }
+    }
+  }
+}
+void readFATEntry()
+{
+  for (byte i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
+  {
+    EEPROM.get(i * sizeof(FATtype), FAT[i]);
+    // Serial.print(FAT[i].name);
+    // Serial.print(" ");
+    // Serial.print(FAT[i].startingPoint);
+    // Serial.print(" ");
+    // Serial.println(FAT[i].lengthOfFile);
+  }
+}
 bool fileNameExists()
 {
   for (int i = 0; i < noOfFiles; i++)
@@ -47,27 +96,29 @@ void resetSerial()
 bool input_routine()
 {
   // read if any data is available
-  if (Serial.available() > 0)
+  while (Serial.available())
   {
-    // read the length of incoming bytes:
-    int bufferLen = Serial.readBytes(buf, BUFFER_SIZE);
-    Serial.print("I received: ");
-    for (int i = 0; i < bufferLen; i++)
+    c = Serial.read();
+
+    if (c == ' ' || c == '\n')
     {
-      if (buf[i] == ' ' || buf[i] == '\n')
-      {
-        // return true en ga door naar functie
-        buf[i] = '\0';
-        Serial.print(buf);
-        Serial.print(F("\n"));
-        return true;
-      }
+      // return true en ga door naar functie
+      c = 0x00;
+      Serial.print("I received: ");
+      Serial.println(buf);
+
+      j = 0;
+      return true;
     }
-    // Complete buffer
+    else
+    {
+      buf[j] = c;
+      j++;
+      return false;
+    }
   }
-  return false;
 }
-int searchFreeFATPlace()
+int searchFreeFATEntry()
 {
   for (byte i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
   {
@@ -79,24 +130,22 @@ int searchFreeFATPlace()
   }
   return -1;
 }
-
-byte sortFAT(){ // Sort the FAT table
-  byte i, j;
-  for (i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
+void printFATTable()
+{
+  for (byte i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
   {
-    for (j = 0; j < sizeof(FAT) / sizeof(FATtype); j++)
-    {
-      if (strcmp(FAT[i].name, FAT[j].name) < 0)
-      {
-        FATtype temp = FAT[i];
-        FAT[i] = FAT[j];
-        FAT[j] = temp;
-      }
-    }
+    Serial.print(FAT[i].name);
+    Serial.print(" ");
+    Serial.print(FAT[i].startingPoint);
+    Serial.print(" ");
+    Serial.println(FAT[i].lengthOfFile);
   }
-  return 0;
-
 }
+void retrieve()
+{
+  writeFATEntry();
+}
+
 void store()
 {
   Serial.println("in store");
@@ -119,21 +168,21 @@ void store()
     runProccesses();
   }
 
-  if (searchFreeFATPlace() == -1)
+  if (searchFreeFATEntry() == -1)
   {
     Serial.println("No free space in FAT");
     return;
   }
+  readFATEntry();
+  sortFATTable();
+  printFATTable();
   if (fileNameExists())
   {
     Serial.println("File name already exists");
     return;
   }
 }
-void retrieve()
-{
-  Serial.println("Hij is in retrieve");
-}
+
 typedef struct
 {
   char name[BUFFER_SIZE];
@@ -156,33 +205,14 @@ void proccesInput()
       command[i].func();
       return;
     }
-    else
-    {
-      Serial.println(F("Given command not found choose one of following: "));
-      for (byte i = 0; i < sizeof(command) / sizeof(commandType); i++)
-      {
-        Serial.print(command[i].name);
-        Serial.print(" ");
-      }
-      return; // return to main loop
-    }
   }
-}
-
-void writeFATEntry()
-{
-  for (byte i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
+  Serial.println(F("Given command not found choose one of following: "));
+  for (byte i = 0; i < sizeof(command) / sizeof(commandType); i++)
   {
-    EEPROM.put(i * sizeof(FATtype), FAT[i]);
+    Serial.print(command[i].name);
+    Serial.print(" ");
   }
-}
-
-void readFATEntry()
-{
-  for (byte i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
-  {
-    EEPROM.get(i * sizeof(FATtype), FAT[i]);
-  }
+  return; // return to main loop
 }
 
 void setup()
@@ -197,6 +227,7 @@ void loop()
   if (input_routine() == true)
   {
     proccesInput();
+    resetSerial();
   }
   else
 
