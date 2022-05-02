@@ -7,7 +7,8 @@ char buf[BUFFER_SIZE];
 char c;
 int j = 0;
 
-EERef noOfFiles = EEPROM[160];
+// EERef noOfFiles = EEPROM[160];
+int noOfFiles = 0;
 
 typedef struct
 { // struct for the FAT table
@@ -17,14 +18,14 @@ typedef struct
 } FATtype;
 
 FATtype FAT[10] = {
-    {"TEST2", 15, 0},
-    {"", 0, 0},
-    {"", 0, 0},
-    {"TEST", 0, 0},
     {"", 0, 0},
     {"", 0, 0},
     {"", 0, 0},
-    {"TEST3", 50, 0},
+    {"", 0, 0},
+    {"", 0, 0},
+    {"", 0, 0},
+    {"", 0, 0},
+    {"", 0, 0},
     {"", 0, 0},
     {"", 0, 0}};
 
@@ -67,23 +68,19 @@ void readFATEntry()
   for (byte i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
   {
     EEPROM.get(i * sizeof(FATtype), FAT[i]);
-    // Serial.print(FAT[i].name);
-    // Serial.print(" ");
-    // Serial.print(FAT[i].startingPoint);
-    // Serial.print(" ");
-    // Serial.println(FAT[i].lengthOfFile);
   }
 }
-bool fileNameExists()
+
+byte fileNameExists(char *inputName)
 {
-  for (int i = 0; i < noOfFiles; i++)
+  for (byte i = 0; i < 10; i++) // 10 moet numberOfFiles worden
   {
-    if (strcmp(FAT[i].name, buf) == 0)
+    if (strcmp(FAT[i].name, inputName) == 0)
     {
-      return true;
+      return i;
     }
   }
-  return false;
+  return -1;
 }
 void runProccesses()
 {
@@ -124,7 +121,8 @@ int searchFreeFATEntry()
   {
     if (strcmp(FAT[i].name, "") == 0)
     {
-      Serial.println(F("Found free FAT entry"));
+      Serial.print(F("Found free FAT entry at: "));
+      Serial.println(i);
       return i;
     }
   }
@@ -132,6 +130,7 @@ int searchFreeFATEntry()
 }
 void printFATTable()
 {
+  Serial.println("FAT table:");
   for (byte i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
   {
     Serial.print(FAT[i].name);
@@ -167,22 +166,32 @@ void store()
   {
     runProccesses();
   }
-
-  if (searchFreeFATEntry() == -1)
+  char inputData[BUFFER_SIZE];
+  strcpy(inputData, buf);
+  readFATEntry();
+  sortFATTable();
+  printFATTable();
+  byte f = searchFreeFATEntry();
+  if (f == -1)
   {
     Serial.println("No free space in FAT");
     return;
   }
-  readFATEntry();
-  sortFATTable();
-  printFATTable();
-  if (fileNameExists())
+  if (fileNameExists(inputName) == -1)
   {
-    Serial.println("File name already exists");
+    Serial.println("FileName already exists");
     return;
   }
-}
+  FAT[noOfFiles].startingPoint = f;
+  FAT[noOfFiles].lengthOfFile = inputLength;
+  strcpy(FAT[noOfFiles].name, inputName);
+  noOfFiles++;
 
+  for (int i = 0; i < inputLength; i++)
+  {
+    EEPROM.put(f + i, inputData[i]);
+  }
+}
 typedef struct
 {
   char name[BUFFER_SIZE];
@@ -219,7 +228,6 @@ void setup()
 {
   Serial.begin(9600);
   Serial.println("Arduino OS 1.0 Ready");
-  FATtype test = {"test", 0, 0};
 }
 
 void loop()
