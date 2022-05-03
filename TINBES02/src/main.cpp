@@ -35,12 +35,12 @@ void writeNoOfFiles()
 void readNoOfFiles()
 {
   noOfFiles = EEPROM.read(160);
-  Serial.print("noOfFiles: ");
+  Serial.print(F("noOfFiles: "));
   Serial.println(noOfFiles);
 }
 void writeFATEntry()
 {
-  for (int i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
+  for (unsigned int i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
   {
     EEPROM.put(i * sizeof(FATtype), FAT[i]);
   }
@@ -74,7 +74,7 @@ void sortFATTable()
 }
 void readFATEntry()
 {
-  for (int i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
+  for (unsigned int i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
   {
     EEPROM.get(i * sizeof(FATtype), FAT[i]);
   }
@@ -99,6 +99,7 @@ void resetSerial()
   memset(buf, 0, sizeof(buf));
 }
 bool input_routine()
+/* Reading the serial input and putting it in a buffer. */
 {
   // read if any data is available
   while (Serial.available())
@@ -109,7 +110,7 @@ bool input_routine()
     {
       // return true en ga door naar functie
       c = 0x00;
-      Serial.print("I received: ");
+      Serial.print(F("I received: "));
       Serial.println(buf);
 
       j = 0;
@@ -122,10 +123,11 @@ bool input_routine()
       return false;
     }
   }
+  return false;
 }
 int searchEmptyFATEntry()
 {
-  for (int i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
+  for (unsigned int i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
   {
     if (strcmp(FAT[i].name, "") == 0)
     {
@@ -140,39 +142,55 @@ int searchFreeFATStartingPoint(int *lengthOfFile)
   Serial.println(F("Searching for free FAT starting point"));
   // sortFATTable();
   int prev = 0;
+
+  for (int i = 0; i < 10; i++) // 10 moet number of files worden
   {
-    for (int i = 0; i < 10; i++) // 10 moet number of files worden
-    {
-      if (FAT[i].startingPoint - prev > *lengthOfFile)
-        return prev;
+    if (FAT[i].startingPoint - prev > *lengthOfFile)
+      return prev;
 
-      Serial.print("Free starting point found at: ");
-      Serial.println(prev);
+    Serial.print(F("Free starting point found at: "));
+    Serial.println(prev);
 
-      prev = FAT[i].startingPoint + FAT[i].lengthOfFile;
-    }
+    prev = FAT[i].startingPoint + FAT[i].lengthOfFile;
   }
+  return -1;
 }
 void printFATTable()
 {
   readFATEntry(); // uitcommenten voor testen
   sortFATTable(); // uitcomenten voor testen
 
-  Serial.println("FAT table:");
-  Serial.println("==========================================================");
-  for (int i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
+  Serial.println(F("======================= FAT TABLE ======================"));
+  for (unsigned int i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
   {
     Serial.print(FAT[i].name);
-    Serial.print(" ");
+    Serial.print(F(" "));
     Serial.print(FAT[i].startingPoint);
-    Serial.print(" ");
+    Serial.print(F(" "));
     Serial.println(FAT[i].lengthOfFile);
   }
-  Serial.println("==========================================================");
+  Serial.println(F("========================================================="));
+}
+void freespace()
+{
+  int largestFreeSpace = 0;
+  int largestFreeSpaceIndex = 0;
+  for (unsigned int i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
+  {
+    if (FAT[i].startingPoint + FAT[i].lengthOfFile > largestFreeSpace)
+    {
+      largestFreeSpace = FAT[i].startingPoint + FAT[i].lengthOfFile;
+      largestFreeSpaceIndex = i;
+    }
+  }
+  Serial.print(F("Largest free space found at: "));
+  Serial.println(largestFreeSpaceIndex);
+  Serial.print(F("Of size: "));
+  Serial.println(largestFreeSpace);
 }
 void retrieve()
 {
-  Serial.println("in retrieve");
+  Serial.println(F("in retrieve"));
   readFATEntry();
   sortFATTable();
   resetSerial();
@@ -191,9 +209,9 @@ void retrieve()
 
   Serial.print(F("Starting point: "));
   Serial.println(FAT[k].startingPoint);
-  Serial.print("File length: ");
+  Serial.print(F("File length: "));
   Serial.println(FAT[k].lengthOfFile);
-  Serial.print("File name: ");
+  Serial.print(F("File name: "));
   Serial.println(FAT[k].name);
 
   for (int i = 0; i < FAT[k].lengthOfFile; i++)
@@ -204,11 +222,11 @@ void retrieve()
     Serial.print(c);
     delay(40);
   }
-  Serial.println("");
+  Serial.println(F(""));
 }
 void erase()
 {
-  Serial.println("in erase");
+  Serial.println(F("in erase"));
   readFATEntry();
   sortFATTable();
   readNoOfFiles();
@@ -219,7 +237,7 @@ void erase()
   }
   char inputName[BUFFER_SIZE];
   strcpy(inputName, buf);
-  int k = fileNameExists(inputName);
+  signed int k = fileNameExists(inputName);
   if (k == -1)
   {
     Serial.println(F("File does not exist"));
@@ -237,11 +255,12 @@ void erase()
   readNoOfFiles();
 }
 void store()
+
 {
   readFATEntry();
   sortFATTable();
   readNoOfFiles();
-  Serial.println("in store");
+  Serial.println(F("in store"));
   resetSerial();
   while (input_routine() == false)
   {
@@ -265,15 +284,20 @@ void store()
 
   if (searchEmptyFATEntry() == -1)
   {
-    Serial.println("No free space in FAT");
+    Serial.println(F("No free space in FAT"));
     return;
   }
   if (fileNameExists(inputName) != -1)
   {
-    Serial.println("FileName already exists");
+    Serial.println(F("FileName already exists"));
     return;
   }
   int f = searchFreeFATStartingPoint(&inputLength);
+  if (f == -1)
+  {
+    Serial.println(F("No free space in EEPROM"));
+    return;
+  }
   Serial.print(F("Free starting point: "));
   Serial.println(f);
 
@@ -294,6 +318,23 @@ void store()
   readFATEntry();
   printFATTable();
 }
+void files()
+{
+  readFATEntry();
+  sortFATTable();
+  readNoOfFiles();
+  Serial.println(F("in files"));
+  Serial.println(F("===================== ALL FILES ========================"));
+  for (int i = 0; i < noOfFiles; i++)
+  {
+    Serial.print(F("File name: "));
+    Serial.print(FAT[i].name);
+    Serial.print(F(" | "));
+    Serial.print(F("File Length: "));
+    Serial.println(FAT[i].lengthOfFile);
+  }
+  Serial.println(F("=========================================================="));
+}
 typedef struct
 {
   char name[BUFFER_SIZE];
@@ -306,12 +347,13 @@ static commandType command[] =
         {"retrieve", &retrieve},
         {"printfat", &printFATTable},
         {"erase", &erase},
-        {"", NULL},
+        {"files", &files},
+        {"freespace", &freespace},
         {"", NULL}};
 
 void proccesInput()
 {
-  for (int i = 0; i < sizeof(command) / sizeof(commandType); i++)
+  for (unsigned int i = 0; i < sizeof(command) / sizeof(commandType); i++)
   {
     if (strcmp(command[i].name, buf) == 0)
     {
@@ -321,7 +363,7 @@ void proccesInput()
     }
   }
   Serial.println(F("Given command not found choose one of following: "));
-  for (int i = 0; i < sizeof(command) / sizeof(commandType); i++)
+  for (unsigned int i = 0; i < sizeof(command) / sizeof(commandType); i++)
   {
     Serial.print(command[i].name);
     Serial.print(" ");
@@ -332,11 +374,11 @@ void proccesInput()
 void setup()
 {
   Serial.begin(9600);
-  Serial.println("Arduino OS 1.0 Ready");
+  Serial.println(F("Arduino OS 1.0 Ready"));
   // RESET
-  writeFATEntry();
-  noOfFiles = 0;
-  writeNoOfFiles();
+  // writeFATEntry();
+  // noOfFiles = 0;
+  // writeNoOfFiles();
   // RESET
   readNoOfFiles();
   readFATEntry();
