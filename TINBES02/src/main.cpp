@@ -53,7 +53,7 @@ void sortFATTable()
   while (!sorted)
   {
     sorted = true;
-    for (int i = 0; i < noOfFiles - 1; i++) // 10 uiteindelijk numberOfFiles NOITEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+    for (int i = 0; i < 10 - 1; i++) // 10 uiteindelijk numberOfFiles NOITEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
     {
       if (FAT[i].startingPoint > FAT[i + 1].startingPoint)
       {
@@ -137,17 +137,17 @@ int searchEmptyFATEntry()
 }
 int searchFreeFATStartingPoint(int *lengthOfFile)
 {
+  Serial.println(F("Searching for free FAT starting point"));
   // sortFATTable();
-  long prev = 0;
+  int prev = 0;
   {
-    for (int i = 0; i < noOfFiles; i++) // 10 moet number of files worden
+    for (int i = 0; i < 10; i++) // 10 moet number of files worden
     {
-      if (FAT[i].startingPoint - prev > FAT[i].lengthOfFile)
-      {
-        Serial.print("Free starting point found at: ");
-        Serial.println(prev);
+      if (FAT[i].startingPoint - prev > *lengthOfFile)
         return prev;
-      }
+
+      Serial.print("Free starting point found at: ");
+      Serial.println(prev);
 
       prev = FAT[i].startingPoint + FAT[i].lengthOfFile;
     }
@@ -159,6 +159,7 @@ void printFATTable()
   sortFATTable(); // uitcomenten voor testen
 
   Serial.println("FAT table:");
+  Serial.println("==========================================================");
   for (int i = 0; i < sizeof(FAT) / sizeof(FATtype); i++)
   {
     Serial.print(FAT[i].name);
@@ -167,6 +168,7 @@ void printFATTable()
     Serial.print(" ");
     Serial.println(FAT[i].lengthOfFile);
   }
+  Serial.println("==========================================================");
 }
 void retrieve()
 {
@@ -209,6 +211,7 @@ void erase()
   Serial.println("in erase");
   readFATEntry();
   sortFATTable();
+  readNoOfFiles();
   resetSerial();
   while (input_routine() == false)
   {
@@ -223,11 +226,21 @@ void erase()
     return;
   }
   strcpy(FAT[k].name, "");
-  FAT[k].startingPoint = 0;
+  FAT[k].startingPoint = 999;
   FAT[k].lengthOfFile = 0;
+  noOfFiles--;
+  sortFATTable();
+  writeFATEntry();
+  readFATEntry();
+  sortFATTable();
+  writeNoOfFiles();
+  readNoOfFiles();
 }
 void store()
 {
+  readFATEntry();
+  sortFATTable();
+  readNoOfFiles();
   Serial.println("in store");
   resetSerial();
   while (input_routine() == false)
@@ -249,12 +262,7 @@ void store()
   }
   char inputData[BUFFER_SIZE];
   strcpy(inputData, buf);
-  readFATEntry();
-  sortFATTable();
-  printFATTable();
-  int f = searchFreeFATStartingPoint(&inputLength);
-  Serial.print(F("Free starting point: "));
-  Serial.println(f);
+
   if (searchEmptyFATEntry() == -1)
   {
     Serial.println("No free space in FAT");
@@ -265,18 +273,22 @@ void store()
     Serial.println("FileName already exists");
     return;
   }
-  readNoOfFiles();
+  int f = searchFreeFATStartingPoint(&inputLength);
+  Serial.print(F("Free starting point: "));
+  Serial.println(f);
+
   FAT[noOfFiles].startingPoint = f;
   FAT[noOfFiles].lengthOfFile = inputLength;
   strcpy(FAT[noOfFiles].name, inputName);
   noOfFiles++;
-  writeNoOfFiles();
-  readNoOfFiles();
   for (int i = 0; i < inputLength; i++)
   {
     // Serial.print(inputData[i]);
     EEPROM.put(f + i + 161, inputData[i]);
   }
+  writeNoOfFiles();
+  readNoOfFiles();
+
   sortFATTable();
   writeFATEntry();
   readFATEntry();
@@ -293,7 +305,8 @@ static commandType command[] =
         {"store", &store},
         {"retrieve", &retrieve},
         {"printfat", &printFATTable},
-        // {"erase", &erase},
+        {"erase", &erase},
+        {"", NULL},
         {"", NULL}};
 
 void proccesInput()
@@ -323,7 +336,7 @@ void setup()
   // RESET
   writeFATEntry();
   noOfFiles = 0;
-  writeFATEntry();
+  writeNoOfFiles();
   // RESET
   readNoOfFiles();
   readFATEntry();
