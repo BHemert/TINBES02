@@ -9,6 +9,46 @@ int j = 0;
 
 EERef noOfFiles = EEPROM[160];
 
+byte noOfVars = 0;
+
+byte memory[256];
+
+typedef struct
+{               // struct for the MEM table
+  char name[8]; // 1 byte dus 8 bits?
+  char type[BUFFER_SIZE];
+  int address;
+  int length;
+  int procesID;
+} MEMtype;
+
+MEMtype MEMTABLE[25] = {
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0},
+    {"", "", 0, 0, 0}};
+
 typedef struct
 { // struct for the FAT table
   char name[BUFFER_SIZE];
@@ -27,6 +67,18 @@ FATtype FAT[10] = {
     {"", 999, 0},
     {"", 999, 0},
     {"", 999, 0}};
+
+#define STACKSIZE 32
+byte stack[STACKSIZE];
+byte sp = 0;
+void pushByte(byte b)
+{
+  stack[sp++] = b;
+}
+byte popByte()
+{
+  return stack[--sp];
+}
 
 void writeNoOfFiles()
 {
@@ -319,6 +371,7 @@ void store()
   printFATTable();
 }
 void files()
+
 {
   readFATEntry();
   sortFATTable();
@@ -335,6 +388,96 @@ void files()
   }
   Serial.println(F("=========================================================="));
 }
+
+void readStack()
+{
+  for (int i = 0; i < STACKSIZE; i++)
+  {
+    Serial.print(stack[i]);
+    Serial.print(F(" "));
+  }
+}
+void sortMEMTable()
+{
+  bool sorted = false;
+  long tmp;
+  char b[BUFFER_SIZE];
+  while (!sorted)
+  {
+    sorted = true;
+    for (int i = 0; i < 25 - 1; i++) // 10 uiteindelijk numberOfFiles NOITEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+    {
+      if (MEMTABLE[i].address > MEMTABLE[i + 1].address)
+      {
+
+        tmp = MEMTABLE[i].address;
+        MEMTABLE[i].address = MEMTABLE[i + 1].address;
+        MEMTABLE[i + 1].address = tmp;
+        tmp = MEMTABLE[i].length;
+        MEMTABLE[i].length = MEMTABLE[i + 1].length;
+        MEMTABLE[i + 1].length = tmp;
+        strcpy(b, MEMTABLE[i].name);
+        strcpy(MEMTABLE[i].name, MEMTABLE[i + 1].name);
+        strcpy(MEMTABLE[i + 1].name, b);
+        sorted = false;
+      }
+    }
+  }
+}
+bool searchEmptyMEMEntry()
+{
+  for (unsigned i = 0; i < sizeof(MEMTABLE) / sizeof(MEMtype); i++)
+  {
+    if (strcmp(MEMTABLE[i].name, "") == 0)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+void checkIfNameExists(char *inputName)
+{
+  for (unsigned i = 0; i < sizeof(MEMTABLE) / sizeof(MEMtype); i++)
+  {
+    if (strcmp(MEMTABLE[i].name, inputName) == 0)
+    {
+      Serial.println(F("Name already exists"));
+      strcpy(MEMTABLE[i].name, "");
+      MEMTABLE[i].length = 0;
+      MEMTABLE[i].procesID = 0;
+      MEMTABLE[i].length = 0;
+      noOfVars--;
+    }
+  }
+}
+void storeVar()
+{
+  Serial.println(F("in storeVar"));
+
+  resetSerial();
+  while (input_routine() == false)
+  {
+    runProccesses();
+  }
+  char inputName[8];
+  strcpy(inputName, buf);
+  resetSerial();
+  while (input_routine() == false)
+  {
+    runProccesses();
+  }
+  int procesID = atoi(buf);
+  resetSerial();
+
+  checkIfNameExists(inputName);
+  if (searchEmptyMEMEntry() == false)
+  {
+    Serial.println(F("No free space in MEM"));
+    return;
+  }
+  readStack();
+}
+
 typedef struct
 {
   char name[BUFFER_SIZE];
