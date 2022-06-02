@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <EEPROM.h>
-
+#include "instruction_set.h"
 const int BUFFER_SIZE = 12;
 char buf[BUFFER_SIZE];
 
@@ -398,6 +398,17 @@ void readStack()
     Serial.print(F(" "));
   }
 }
+void printStack()
+{
+  Serial.println(F("===================== STACK ========================"));
+  for (int i = 0; i < STACKSIZE; i++)
+  {
+    Serial.print(stack[i]);
+    Serial.print(F(" "));
+  }
+  Serial.println(F(""));
+  Serial.println(F("=========================================================="));
+}
 void sortMEMTable()
 {
   bool sorted = false;
@@ -474,6 +485,7 @@ int searchFreeMEMStartingPoint(int *size)
 }
 void storeVar()
 {
+  byte type = popByte();
   Serial.println(F("in storeVar"));
   Serial.println(F("give input name"));
   resetSerial();
@@ -503,12 +515,6 @@ void storeVar()
   // pop type van stack
   Serial.println(F("give type"));
   resetSerial();
-  while (input_routine() == false)
-  {
-    runProccesses();
-  }
-  char type[BUFFER_SIZE];
-  strcpy(type, buf);
 
   Serial.println(F("give data"));
   resetSerial();
@@ -520,28 +526,79 @@ void storeVar()
   strcpy(data, buf);
 
   int size;
-  if (type == "CHAR")
+  if (type == CHAR)
   {
     size = 1;
     // pop 1 vn stack etc
     searchFreeMEMStartingPoint(&size);
   }
-  if (type == "INT")
+  if (type == INT)
   {
     size = 2;
     searchFreeMEMStartingPoint(&size);
   }
-  if (type == "FLOAT")
+  if (type == FLOAT)
   {
     size = 4;
     searchFreeMEMStartingPoint(&size);
   }
-  if (type == "STRING")
+  if (type == STRING)
   {
     size = strlen(data) + 1;
     searchFreeMEMStartingPoint(&size);
   }
 }
+
+// TEST MEM BY PUSING
+void pushChar(char c)
+{
+  stack[sp++] = c;
+  stack[sp++] = CHAR;
+}
+void pushInt(int i)
+{
+  stack[sp++] = highByte(i);
+  stack[sp++] = lowByte(i);
+  stack[sp++] = INT;
+}
+void pushFloat(float f)
+{
+  byte b[4];
+  float *pf = (float *)b;
+  *pf = f;
+  for (int i = 3; i >= 0; i--)
+  {
+    stack[sp++] = b[i];
+  }
+  stack[sp++] = FLOAT;
+}
+
+int popInt()
+{
+  return word(stack[--sp], stack[--sp]);
+}
+
+float popFloat()
+{
+  byte b[4];
+  float *pf = (float *)b;
+  for (byte i = 0; i < 4; i++)
+  {
+    b[i] = stack[--sp];
+  }
+  return *pf;
+}
+
+void test2()
+{
+
+  //  getVar('s', 2);
+  pushInt(1024);
+  printStack();
+  // pushFloat(212.23);
+  Serial.println(popInt());
+}
+
 typedef struct
 {
   char name[BUFFER_SIZE];
@@ -556,8 +613,9 @@ static commandType command[] =
         {"erase", &erase},
         {"files", &files},
         {"freespace", &freespace},
+        {"test2", &test2},
         {"", NULL}};
-
+///////////////////////////////////
 void proccesInput()
 {
   for (unsigned int i = 0; i < sizeof(command) / sizeof(commandType); i++)
@@ -593,6 +651,7 @@ void setup()
 
 void loop()
 {
+
   if (input_routine() == true)
   {
     proccesInput();
