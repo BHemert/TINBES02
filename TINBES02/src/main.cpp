@@ -14,8 +14,8 @@ byte noOfVars = 0;
 byte memory[256];
 
 typedef struct
-{               // struct for the MEM table
-  char name[8]; // 1 byte dus 8 bits?
+{ // struct for the MEM table
+  char name[BUFFER_SIZE];
   char type[BUFFER_SIZE];
   int address;
   int length;
@@ -71,6 +71,7 @@ FATtype FAT[10] = {
 #define STACKSIZE 32
 byte stack[STACKSIZE];
 byte sp = 0;
+
 void pushByte(byte b)
 {
   stack[sp++] = b;
@@ -424,36 +425,57 @@ void sortMEMTable()
     }
   }
 }
-bool searchEmptyMEMEntry()
+void checkIfNameandProccesIDExists(char *inputName, int inputProcesID)
+{
+  for (unsigned i = 0; i < sizeof(MEMTABLE) / sizeof(MEMtype); i++)
+  {
+    if (strcmp(MEMTABLE[i].name, inputName) == 0 && MEMTABLE[i].procesID == inputProcesID)
+    {
+      Serial.println(F("Name and proccesID already exists"));
+      MEMTABLE[i].name[0] = '\0';
+      MEMTABLE[i].length = 0;
+      MEMTABLE[i].address = 0;
+      MEMTABLE[i].procesID = 0;
+      MEMTABLE[i].type[0] = '\0';
+
+      noOfVars--;
+      return;
+    }
+  }
+}
+int searchEmptyMEMEntry()
 {
   for (unsigned i = 0; i < sizeof(MEMTABLE) / sizeof(MEMtype); i++)
   {
     if (strcmp(MEMTABLE[i].name, "") == 0)
     {
-      return true;
+      return i;
     }
   }
-  return false;
+  return -1;
 }
-void checkIfNameExists(char *inputName)
+int searchFreeMEMStartingPoint(int *size)
 {
-  for (unsigned i = 0; i < sizeof(MEMTABLE) / sizeof(MEMtype); i++)
+  Serial.println(F("Searching for free FAT starting point"));
+  // sortFATTable();
+  int prev = 0;
+
+  for (int i = 0; i < 10; i++) // 10 moet number of files worden
   {
-    if (strcmp(MEMTABLE[i].name, inputName) == 0)
-    {
-      Serial.println(F("Name already exists"));
-      strcpy(MEMTABLE[i].name, "");
-      MEMTABLE[i].length = 0;
-      MEMTABLE[i].procesID = 0;
-      MEMTABLE[i].length = 0;
-      noOfVars--;
-    }
+    if (MEMTABLE[i].address - prev > *size)
+      return prev;
+
+    Serial.print(F("Free starting point found at: "));
+    Serial.println(prev);
+
+    prev = MEMTABLE[i].address + MEMTABLE[i].length;
   }
+  return -1;
 }
 void storeVar()
 {
   Serial.println(F("in storeVar"));
-
+  Serial.println(F("give input name"));
   resetSerial();
   while (input_routine() == false)
   {
@@ -462,6 +484,7 @@ void storeVar()
   char inputName[8];
   strcpy(inputName, buf);
   resetSerial();
+  Serial.println(F("give proccess id"));
   while (input_routine() == false)
   {
     runProccesses();
@@ -469,15 +492,56 @@ void storeVar()
   int procesID = atoi(buf);
   resetSerial();
 
-  checkIfNameExists(inputName);
+  checkIfNameandProccesIDExists(inputName, procesID);
   if (searchEmptyMEMEntry() == false)
   {
     Serial.println(F("No free space in MEM"));
     return;
   }
-  readStack();
-}
+  sortMEMTable();
 
+  // pop type van stack
+  Serial.println(F("give type"));
+  resetSerial();
+  while (input_routine() == false)
+  {
+    runProccesses();
+  }
+  char type[BUFFER_SIZE];
+  strcpy(type, buf);
+
+  Serial.println(F("give data"));
+  resetSerial();
+  while (input_routine() == false)
+  {
+    runProccesses();
+  }
+  char data[BUFFER_SIZE];
+  strcpy(data, buf);
+
+  int size;
+  if (type == "CHAR")
+  {
+    size = 1;
+    // pop 1 vn stack etc
+    searchFreeMEMStartingPoint(&size);
+  }
+  if (type == "INT")
+  {
+    size = 2;
+    searchFreeMEMStartingPoint(&size);
+  }
+  if (type == "FLOAT")
+  {
+    size = 4;
+    searchFreeMEMStartingPoint(&size);
+  }
+  if (type == "STRING")
+  {
+    size = strlen(data) + 1;
+    searchFreeMEMStartingPoint(&size);
+  }
+}
 typedef struct
 {
   char name[BUFFER_SIZE];
