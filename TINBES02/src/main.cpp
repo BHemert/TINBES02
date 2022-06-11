@@ -483,6 +483,35 @@ int searchFreeMEMStartingPoint(int *size)
   }
   return -1;
 }
+
+char popChar()
+{
+  return stack[--sp];
+}
+String popString()
+{
+  byte size = stack[--sp];
+  char data[size];
+  for (int i = 0; i < size; i++)
+  {
+    data[i] = stack[--sp];
+  }
+  return String(data);
+}
+int popInt()
+{
+  return word(stack[--sp], stack[--sp]);
+}
+float popFloat()
+{
+  byte b[4];
+  float *pf = (float *)b;
+  for (byte i = 0; i < 4; i++)
+  {
+    b[i] = stack[--sp];
+  }
+  return *pf;
+}
 void storeVar()
 {
   byte type = popByte();
@@ -529,22 +558,30 @@ void storeVar()
   if (type == CHAR)
   {
     size = 1;
+    char data = popChar();
+    Serial.println("char" + String(data));
     // pop 1 vn stack etc
     searchFreeMEMStartingPoint(&size);
   }
   if (type == INT)
   {
     size = 2;
+    int data = popInt();
+    Serial.println("int" + String(data));
     searchFreeMEMStartingPoint(&size);
   }
   if (type == FLOAT)
   {
     size = 4;
+    float data = popFloat();
+    Serial.println("float" + String(data));
     searchFreeMEMStartingPoint(&size);
   }
   if (type == STRING)
   {
-    size = strlen(data) + 1;
+    String data = popString();
+    size = data.length();
+    Serial.println("string" + data);
     searchFreeMEMStartingPoint(&size);
   }
 }
@@ -571,22 +608,6 @@ void pushFloat(float f)
     stack[sp++] = b[i];
   }
   stack[sp++] = FLOAT;
-}
-
-int popInt()
-{
-  return word(stack[--sp], stack[--sp]);
-}
-
-float popFloat()
-{
-  byte b[4];
-  float *pf = (float *)b;
-  for (byte i = 0; i < 4; i++)
-  {
-    b[i] = stack[--sp];
-  }
-  return *pf;
 }
 
 void test2()
