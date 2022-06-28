@@ -42,7 +42,7 @@ typedef struct
   byte LR;
 } ProcesType;
 
-int ProcesID = 0;
+int ProcesID = 1;
 int numberOfProcesses = 0;
 #define maxNumberOfProcesses 10
 ProcesType Proces[maxNumberOfProcesses]{};
@@ -203,7 +203,7 @@ int findVar(char *name, byte *id)
   {
     // Serial.println(MEMTABLE[i].name);
     // Serial.println(MEMTABLE[i].procesID);
-    if (name == MEMTABLE[i].name && *id == MEMTABLE[i].procesID)
+    if (*name == MEMTABLE[i].name && *id == MEMTABLE[i].procesID)
     {
       return i;
     }
@@ -372,7 +372,6 @@ void setVar(char name, byte id)
   MEMTABLE[posInMEMTable].length = lengte;
   MEMTABLE[posInMEMTable].procesID = id;
   noOfVars += 1;
-  printMEMTable();
   return;
 }
 void getVar(char name, byte id)
@@ -1293,7 +1292,7 @@ void execute(byte id)
   int timer;
   byte command;
   EEPROM.get(Proces[id].adres + Proces[id].PC + 161, command);
-  Serial.println(command);
+  // Serial.println(command);
   switch (command)
   {
   case CHAR:

@@ -3,43 +3,6 @@ byte prog1[] = {STRING, 'h', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd', '
                 PRINT,
                 STOP};
 
-// program test_vars
-byte prog10[] = {
-    STRING,
-    't',
-    'e',
-    's',
-    't',
-    0,
-    SET,
-    's',
-    CHAR,
-    'a',
-    SET,
-    'c',
-    INT,
-    1,
-    7,
-    SET,
-    'i', // 263
-    FLOAT,
-    66,
-    246,
-    230,
-    102,
-    SET,
-    'f', // 123.45
-    STRING,
-    'p',
-    'a',
-    's',
-    's',
-    'e',
-    'd',
-    0,
-    SET,
-    's'};
-
 // program test_loop
 byte prog3[] = {INT, 0, 0, SET, 'i',
                 LOOP,
@@ -75,9 +38,9 @@ byte prog2[] = {STRING, 't', 'e', 's', 't', 0, SET, 's',
                 INT, 1, 7, SET, 'i',                // 263
                 FLOAT, 66, 246, 230, 102, SET, 'f', // 123.45
                 STRING, 'p', 'a', 's', 's', 'e', 'd', 0, SET, 's',
-                GET, 'c', INCREMENT, SET, 'c',
-                GET, 'i', DECREMENT, SET, 'i',
-                GET, 'f', INCREMENT, SET, 'f',
+                GET, 'c', INCREMENT, SET, 'c', // b
+                GET, 'i', DECREMENT, SET, 'i', // 262
+                GET, 'f', INCREMENT, SET, 'f', // 124.45
                 GET, 's', PRINTLN,
                 GET, 'c', PRINTLN,
                 GET, 'i', PRINTLN,
