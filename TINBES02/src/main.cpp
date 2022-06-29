@@ -1423,7 +1423,21 @@ void execute(byte id)
 //--------------------------------------------RESET------------------------------------------------------------------------
 void clearTables()
 {
-  writeFATEntry();
+  clearMemTable();
+}
+void clearMemTable()
+{
+  for (int i = 0; i < MEMTABLE; i++)
+  {
+    clearAllVars(i);
+  }
+}
+void clearStack(byte id)
+{
+  for (int i = 0; i < STACKSIZE; i++)
+  {
+    Proces[id].stack[i] = 0;
+  }
 }
 //=========================================================================================================================
 typedef struct
@@ -1481,6 +1495,8 @@ void setup()
   writeFATEntry();
   noOfFiles = 0;
   writeNoOfFiles();
+  // clearMemTable();
+  clearStack(0);
   // RESET
   readNoOfFiles();
   readFATEntry();
