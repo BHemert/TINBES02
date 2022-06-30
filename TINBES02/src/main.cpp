@@ -210,7 +210,7 @@ int findVar(char *name, byte *id)
   }
   return -1;
 }
-void sortMEM()
+void sortMemTable()
 {
   bool sorted = false;
   byte tmp;
@@ -287,9 +287,9 @@ void clearAllVars(byte id)
     }
   }
 }
-int MEMspace(byte length)
+int memTableSpace(byte length)
 {
-  sortMEM();
+  sortMemTable();
   byte prev = 0;
   for (byte i = 0; i < noOfVars; i++)
   {
@@ -334,7 +334,7 @@ void setVar(char name, byte id)
     if (type == STRING)
     {
       lengte = popByte(id);
-      posInMEM = MEMspace(lengte);
+      posInMEM = memTableSpace(lengte);
     }
     clearVar(name, id); // verwijder oude variabele
   }
@@ -346,7 +346,7 @@ void setVar(char name, byte id)
     {
       lengte = popByte(id);
     }
-    posInMEM = MEMspace(lengte);
+    posInMEM = memTableSpace(lengte);
     if (posInMEM == -1)
     {
       Serial.println(F("not enough space to store variable"));
