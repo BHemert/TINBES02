@@ -1,0 +1,56 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
+{
+    "configurations": [
+        {
+            "name": "PlatformIO",
+            "includePath": [
+                "/home/bjorn/GitHub/TINBES02/TINBES02/include",
+                "/home/bjorn/GitHub/TINBES02/TINBES02/src",
+                "/home/bjorn/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                "/home/bjorn/.platformio/packages/framework-arduino-avr/cores/arduino",
+                "/home/bjorn/.platformio/packages/framework-arduino-avr/variants/standard",
+                "/home/bjorn/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                "/home/bjorn/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                "/home/bjorn/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                "/home/bjorn/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/home/bjorn/GitHub/TINBES02/TINBES02/include",
+                    "/home/bjorn/GitHub/TINBES02/TINBES02/src",
+                    "/home/bjorn/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                    "/home/bjorn/.platformio/packages/framework-arduino-avr/cores/arduino",
+                    "/home/bjorn/.platformio/packages/framework-arduino-avr/variants/standard",
+                    "/home/bjorn/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                    "/home/bjorn/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                    "/home/bjorn/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                    "/home/bjorn/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=60002",
+                "ARDUINO_AVR_UNO",
+                "F_CPU=16000000L",
+                "ARDUINO_ARCH_AVR",
+                "ARDUINO=10808",
+                "__AVR_ATmega328P__",
+                ""
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "compilerPath": "/home/bjorn/.platformio/packages/toolchain-atmelavr/bin/avr-gcc",
+            "compilerArgs": [
+                "-mmcu=atmega328p",
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}
